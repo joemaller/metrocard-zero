@@ -29,7 +29,7 @@ var connect = require('connect');
 var connectLiveReload = require('connect-livereload');
 var serveStatic = require('serve-static');
 var source = require('vinyl-source-stream');
-// var buffer = require('vinyl-buffer');
+var buffer = require('vinyl-buffer');
 var watchify = require('watchify');
 var reactify = require('reactify');
 var browserify = require('browserify');
@@ -139,7 +139,10 @@ var bundle = function(key) {
   bundlers[key].bundle()
     .on('error', gutil.log.bind(gutil, 'Browserify Error'))
     .pipe(source(key))
-    .pipe(gulp.dest(path.join(BUILD_DIR)));
+    .pipe(buffer())
+    .pipe(sourcemaps.init({loadMaps: true}))
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest(BUILD_DIR));
 
   gutil.log(
     'Watchify: Bundled',
@@ -161,6 +164,9 @@ gulp.task('browserify', function() {
         .transform(reactify)
         .bundle()
         .pipe(source(file.relative))
+        .pipe(buffer())
+        .pipe(sourcemaps.init({loadMaps: true}))
+        .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest(BUILD_DIR));
 
       gutil.log('Browserify: Bundled',
