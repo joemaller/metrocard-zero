@@ -16,7 +16,7 @@ var spawn = require('child_process').spawn;
 var _ = require('lodash');
 var gulp = require('gulp');
 var gutil = require('gulp-util');
-var tap = require('gulp-tap');
+// var tap = require('gulp-tap');
 var runSequence = require('run-sequence');
 var through = require('through2');
 var del = require('del');
@@ -33,6 +33,10 @@ var buffer = require('vinyl-buffer');
 var watchify = require('watchify');
 var reactify = require('reactify');
 var browserify = require('browserify');
+var rename = require('gulp-rename');
+var svgmin = require('gulp-svgmin');
+var prettify = require('gulp-prettify');
+var replace = require('gulp-replace');
 // var Q = require('q');
 
 
@@ -89,6 +93,24 @@ gulp.task('clean', function(cb) {
 
 
 /**
+ * Clean up illustrator SVGs
+ */
+gulp.task('svg', function() {
+    return gulp.src(['./design_assets/*.svg', '!./design_assets/*.min.svg'])
+      .pipe(svgmin({
+        plugins: [{cleanupIDs: false}]
+      }))
+      .pipe(replace(/"_|_"/g, '"'))
+      .pipe(prettify({indent_size: 4}))
+      .pipe(rename({extname: '.min.svg'}))
+      .pipe(gulp.dest('./design_assets'))
+      .on('data', function(file) {
+        gutil.log('SVG: Cleaned', gutil.colors.magenta(file.relative));
+      });
+  }
+);
+
+/**
  * copies STATIC_ASSETS to BUILD_DIR using relative paths (so things stay nested)
  */
 gulp.task('copy', function() {
@@ -137,7 +159,17 @@ gulp.task('watchify', function() {
 var bundle = function(key) {
   var startTime = process.hrtime();
   bundlers[key].bundle()
-    .on('error', gutil.log.bind(gutil, 'Browserify Error'))
+    // .on('error', gutil.log.bind(gutil, 'Browserify Error'))
+    .on('error', function(err) {
+      gutil.log(
+        'Browserify:', chalk.red('ERROR'),
+        '"' + err.message.replace(/'([^']+)'/g, function() {
+          return chalk.magenta(arguments[1]);
+        }) + '"',
+        'in', chalk.magenta(key)
+      );
+    })
+
     .pipe(source(key))
     .pipe(buffer())
     .pipe(sourcemaps.init({loadMaps: true}))
@@ -158,23 +190,35 @@ var bundle = function(key) {
  */
 gulp.task('browserify', function() {
   return gulp.src(['source/js/*.js'], {base: 'source'})
-    .pipe(tap(function(file) {
+    .pipe(through.obj(function(file, enc, cb) {
       var startTime = process.hrtime();
       browserify(file.path)
         .transform(reactify)
-        .bundle()
+        .bundle(function(err, stream) {
+          if (!err) {
+            gutil.log(
+              'Browserify: Bundled', chalk.magenta(file.relative),
+              'in', chalk.magenta(prettyHrtime(process.hrtime(startTime)))
+            );
+          }
+          cb(err, stream);
+        })
+        .on('error', function(err) {
+          gutil.log(
+            'Browserify:', chalk.red('ERROR'),
+            '"' + err.message.replace(/'([^']+)'/g, function() {
+              return chalk.magenta(arguments[1]);
+            }) + '"',
+            'in', chalk.magenta(file.relative)
+          );
+        })
         .pipe(source(file.relative))
         .pipe(buffer())
         .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest(BUILD_DIR));
-
-      gutil.log('Browserify: Bundled',
-        chalk.magenta(file.relative),
-        'in',
-        chalk.magenta(prettyHrtime(process.hrtime(startTime))));
     }));
-});
+  });
 
 
 /**
@@ -216,7 +260,7 @@ gulp.task('webserver', ['build'], function() {
 /**
  * The main watch task, tracks and responds to changes in source files
  */
-gulp.task('watch', ['webserver', 'watchify'], function() {
+gulp.task('watch', ['webserver', 'svg', 'watchify'], function() {
   livereload.listen();
 
   // see the note above the gulp-reload task before enabling this
@@ -227,6 +271,9 @@ gulp.task('watch', ['webserver', 'watchify'], function() {
 
   // Move static files on change
   gulp.watch(STATIC_ASSETS, ['copy']);
+
+  // Clean up SVGs
+  gulp.watch('./design_assets/*.svg', ['svg']);
 
   // trigger livereload whenever files in BUILD_DIR change
   gulp.watch([path.join(BUILD_DIR, '/**/*')])
