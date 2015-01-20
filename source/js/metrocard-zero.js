@@ -32,6 +32,10 @@ var ValueForm = React.createClass({
         this.props.updateBuys(calculate_spending(value));
     },
 
+    componentDidMount: function() {
+      $('#initial-value').focus();
+    },
+
     render: function() {
         return (
             <form className="metrocard-value" onChange={this.handleSubmit}>
