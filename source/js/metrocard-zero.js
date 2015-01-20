@@ -16,6 +16,8 @@ var MetrocardApp = React.createClass({
       <div className="app">
         <ValueForm updateBuys={this.updateBuys} />
         <BuyList transactions={this.state.transactions} />
+        <hr />
+        <BuyList transactions={this.state.transactions} debug={true} />
       </div>
      );
   }
@@ -51,11 +53,11 @@ var ValueForm = React.createClass({
 var BuyList = React.createClass({
 
   render: function() {
-
+    var showDebug = this.props.debug;
     console.log('this.props.tranactions', this.props.transactions);
     var transactions = this.props.transactions.map(function(t) {
       return (
-        <BuyCard data={t} />
+        <BuyCard data={t} debug={showDebug} />
       );
     });
 
@@ -72,11 +74,14 @@ var BuyList = React.createClass({
 
 var BuyCard = React.createClass({
   render: function() {
-    var items = _.map(this.props.data, function(val, key) {
-      return(
-             <li><small><strong>{key}:</strong> {val}</small></li>
-             );
-    });
+    var items = [];
+    if (this.props.debug === true) {
+      items = _.map(this.props.data, function(val, key) {
+        return(
+          <li><small><strong>{key}:</strong> {val}</small></li>
+        );
+      });
+    }
     console.log('items', items);
     return (
       <div className="transaction">
