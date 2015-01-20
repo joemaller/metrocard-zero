@@ -31,10 +31,14 @@
     "q": "^1.1.2",
     "reactify": "^0.17.1",
     "run-sequence": "^1.0.2",
-    "serve-static": "^1.7.1",
     "svgo": "^0.5.0",
+    "through2": "^0.6.3",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.0.0",
     "watchify": "^2.2.1"
+  },
+  "dependencies": {
+    "express": "^4.11.0",
+    "serve-static": "^1.8.0"
   }
 }
