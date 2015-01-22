@@ -1,3 +1,3 @@
 # Metrocard Zero
 
-This is really raw. Mostly just pushed so I can use github-pages to get it online quickly. 
+Just wanted to see something working so I could investigate the MTA's rounding methods more easily. 
