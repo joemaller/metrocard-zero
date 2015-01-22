@@ -1,6 +1,7 @@
 // var React = require('react');
 
 var _ = require('lodash');
+var math = require('mathjs');
 var MetrocardApp = React.createClass({
 
   getInitialState: function() {
@@ -15,6 +16,7 @@ var MetrocardApp = React.createClass({
     return(
       <div className="app">
         <ValueForm updateBuys={this.updateBuys} />
+        <KeyPad />
         <BuyList transactions={this.state.transactions} />
         <hr />
         <BuyList transactions={this.state.transactions} debug={true} />
@@ -76,8 +78,9 @@ var BuyCard = React.createClass({
   render: function() {
     var items = [];
     if (this.props.debug === true) {
-      items = _.map(this.props.data, function(val, key) {
-        return(
+      items = _.omit(this.props.data, ['initial_value', 'rides'])
+      items = _.map(items, function(val, key) {
+        return (
           <li><small><strong>{key}:</strong> {val}</small></li>
         );
       });
@@ -93,6 +96,36 @@ var BuyCard = React.createClass({
     );
   }
 });
+
+var KeyPad = React.createClass({
+  render: function() {
+    return (
+      <div id="keypad">
+         <NumberButton value="1" />
+         <NumberButton value="2" />
+         <NumberButton value="3" />
+         <br />
+         <NumberButton value="4" />
+         <NumberButton value="5" />
+         <NumberButton value="6" />
+         <br />
+         <NumberButton value="7" />
+         <NumberButton value="8" />
+         <NumberButton value="9" />
+         <br />
+         <NumberButton value="0" />
+      </div>
+    );
+  }
+});
+
+var NumberButton = React.createClass({
+  render: function() {
+    return (
+      <button onClick={this.props.clickHandler}>{this.props.value}</button>
+    );
+  }
+})
 
 
 React.render(
