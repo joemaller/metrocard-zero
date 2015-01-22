@@ -129,8 +129,9 @@ var calculate_spending = function(initial_value) {
       var transaction = {
         purchase: purchase.toFixed(2),
         raw_purchase: purchase,
+        advantage: purchase - math.round(purchase, 2),
         bonus: (purchase * 0.05).toFixed(2),
-        raw_bonus: purchase * 0.5,
+        raw_bonus: purchase * 0.05,
         total_sans_bonus: initial_value + purchase,
         total_with_bonus: target,
         rides: target/fare,
