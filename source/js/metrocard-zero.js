@@ -2,10 +2,39 @@
 
 var _ = require('lodash');
 var math = require('mathjs');
+var numeral = require('numeral');
+
+var EventEmitter = require('events').EventEmitter;
+var events = new EventEmitter();
+
+React.initializeTouchEvents(true);
+
 var MetrocardApp = React.createClass({
 
   getInitialState: function() {
-    return {transactions: []};
+    return {transactions: [], balance: ''};
+  },
+
+  componentDidMount: function() {
+    events.addListener('digit', this.pushDigit);
+    events.addListener('popDigit', this.popDigit);
+  },
+
+  componentWillUnmount: function() {
+    events.removeListener('digit', this.pushDigit);
+    events.removeListener('popDigit', this.popDigit);
+  },
+
+  pushDigit: function(digit) {
+    console.log(digit, this.state.balance);
+    this.setState({balance: this.state.balance + '' + digit});
+    console.log('post balance', this.state.balance);
+    this.updateBuys(calculate_spending(this.state.balance));
+  },
+
+  popDigit: function() {
+    console.log('popDigit');
+    this.setState({balance: ('' + this.state.balance).slice(0,-1)});
   },
 
   updateBuys: function(data) {
@@ -15,7 +44,7 @@ var MetrocardApp = React.createClass({
   render: function() {
     return(
       <div className="app">
-        <ValueForm updateBuys={this.updateBuys} />
+        <ValueForm updateBuys={this.updateBuys} balance={this.state.balance} />
         <KeyPad />
         <BuyList transactions={this.state.transactions} />
         <hr />
@@ -36,18 +65,29 @@ var ValueForm = React.createClass({
         this.props.updateBuys(calculate_spending(value));
     },
 
+  getInitialState: function() {
+    return {balance: null};
+  },
+
     componentDidMount: function() {
       $('#initial-value').focus();
     },
 
     render: function() {
+        // var money = '$' + this.props.balance / 100;
+        var money = numeral(this.props.balance / 100).format('$0.00');
         return (
-            <form className="metrocard-value" onChange={this.handleSubmit}>
-              <label for="initial-value">What’s on your Metrocard?</label>
-              <input id="initial-value" className="form-control" type="number" ref="value" placeholder="$ 0.00" />
-            </form>
-
+            <div>
+            <div>
+              {money}
+              <BackspaceButton />
+            </div>
+            </div>
         );
+            // <form className="metrocard-value" onChange={this.handleSubmit}>
+            //   <label for="initial-value">What’s on your Metrocard?</label>
+            //   <input id="initial-value" className="form-control" type="number" ref="value" placeholder="$ 0.00" value={this.props.balance} />
+            // </form>
     }
 });
 
@@ -120,12 +160,57 @@ var KeyPad = React.createClass({
 });
 
 var NumberButton = React.createClass({
-  render: function() {
-    return (
-      <button onClick={this.props.clickHandler}>{this.props.value}</button>
+      getInitialState: function() {
+        return {
+          active: false
+        };
+      },
+
+      clickHandler: function() {
+        // console.log(this.props.value);
+                events.emit('digit', this.props.value);
+
+        //         this.setState({
+        //   'active': true
+        // });
+
+      },
+
+      touchStart: function() {
+        console.log('touchStart');
+        this.setState({
+          'active': true
+        })
+      },
+      touchEnd: function() {
+        console.log('touchEnd');
+        this.setState({
+          'active': false
+        })
+      },
+      render: function() {
+          var activeClass = (this.state.active) ? ' active' : '';
+          return (
+              <div
+              className={"number-button" + activeClass}
+                onTouchStart={this.touchStart}
+                onTouchEnd={this.touchEnd}
+                onClick={this.clickHandler}><span>{this.props.value}</span></div>
     );
   }
 })
+
+var BackspaceButton = React.createClass({
+  clickHandler: function() {
+    events.emit('popDigit');
+  },
+  render: function() {
+    return (
+            <a className="back-button" onClick={this.clickHandler}>⌫</a>
+            // <button className="back-button" onClick={this.clickHandler}>⌫</button>
+    );
+  }
+});
 
 
 React.render(
