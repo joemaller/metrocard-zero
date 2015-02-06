@@ -46,10 +46,11 @@ var replace = require('gulp-replace');
 var LOCAL_PORT = 9001;
 var SRC_DIR = './source';
 var BUILD_DIR = './build';
-var SASS_FILES = './sass/**/*.scss';
+var SASS_FILES = path.join(SRC_DIR, 'sass/**/*.scss');
 var STATIC_ASSETS = [
   path.join(SRC_DIR, '**/*'),       // everything...
-  '!' + path.join(SRC_DIR, 'js/*.js')
+  '!' + path.join(SRC_DIR, 'js/*.js'),
+  '!' + path.join(SRC_DIR, 'sass/*.scss')
 ];
 
 

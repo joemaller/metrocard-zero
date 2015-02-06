@@ -1,0 +1,46 @@
+
+$button_size: 75px;
+body {
+    background: #000;
+    color: #aaa;
+}
+.number-button {
+    height: $button_size;
+    display: inline-block;
+    line-height: $button_size - $button_size/5;
+    width: $button_size;
+    border: 5px solid #888;
+    margin: 5px;
+    font-size: $button_size * 0.7;
+    font-weight: bold;
+    text-align: center;
+    color: #fff;
+    background: #000;
+    span {
+
+        display: block;
+        height: 100%;
+        width: 100%;
+        border: 2px solid #bbb;
+    }
+    &:active {
+        background: gold;
+    }
+    // &.active {
+    //     background: cyan;
+    // }
+    &:focus {
+        outline: none;
+    }
+}
+
+.back-button {
+    color: #c00;
+    font-size: 150%;
+    float: right;
+}
+#keypad {
+
+    margin: 25px auto;
+    text-align: center;
+}
