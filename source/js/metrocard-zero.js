@@ -26,20 +26,22 @@ var MetrocardApp = React.createClass({
   },
 
   pushDigit: function(digit) {
-    var b = math.chain(this.state.balance)
-                .multiply(1000)
-                .add(digit)
-                .divide(100)
-                .done();
+    var b = math
+      .chain(this.state.balance)
+      .multiply(1000)
+      .add(digit)
+      .divide(100)
+      .done();
     this.updateBuys(b);
   },
 
   popDigit: function() {
-    var b = math.chain(this.state.balance)
-                .multiply(10)
-                .floor()
-                .divide(100)
-                .done();
+    var b = math
+      .chain(this.state.balance)
+      .multiply(10)
+      .floor()
+      .divide(100)
+      .done();
     this.updateBuys(b);
   },
 
@@ -53,7 +55,6 @@ var MetrocardApp = React.createClass({
   render: function() {
     return(
       <div className="app">
-      debug balance: {this.state.balance}
         <BalanceDisplay balance={this.state.balance} />
         <KeyPad />
         <BuyList transactions={this.state.transactions} />
@@ -81,7 +82,6 @@ var BalanceDisplay = React.createClass({
 
 
 var BuyList = React.createClass({
-
   render: function() {
     var showDebug = this.props.debug;
     var transactions = this.props.transactions.map(function(t) {
@@ -165,8 +165,9 @@ var NumberButton = React.createClass({
           'active': true
         })
       },
-      touchEnd: function() {
-        console.log('touchEnd');
+      touchEnd: function(foo) {
+        console.log('touchEnd', foo);
+        events.emit('digit', this.props.value)
         this.setState({
           'active': false
         })
@@ -177,8 +178,7 @@ var NumberButton = React.createClass({
               <div
                   className={"number-button" + activeClass}
                   onTouchStart={this.touchStart}
-                  onTouchEnd={this.touchEnd}
-                  onClick={this.clickHandler}>
+                  onTouchEnd={this.touchEnd}>
                     <span>{this.props.value}</span>
               </div>
     );
