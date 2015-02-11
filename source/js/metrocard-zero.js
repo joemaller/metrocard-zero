@@ -73,7 +73,6 @@ var BalanceDisplay = React.createClass({
           <div>
               <div className="balance">
                   {money}
-                  <BackspaceButton />
               </div>
           </div>
         );
@@ -114,10 +113,12 @@ var BuyCard = React.createClass({
     }
     return (
       <div className="transaction">
-      <strong>Buy this: ${this.props.data.purchase}</strong> (${this.props.data.total_with_bonus.toFixed(2)} total, {this.props.data.rides} rides)
-      <ul className="debug">
-      {items}
-      </ul>
+          <strong>
+              Buy: <span  className="white">${this.props.data.purchase}</span>
+          </strong> ${this.props.data.total_with_bonus.toFixed(2)} total, {this.props.data.rides} rides
+          <ul className="debug">
+            {items}
+          </ul>
       </div>
     );
   }
@@ -142,7 +143,9 @@ var KeyPad = React.createClass({
                 <NumberButton value={8} />
                 <NumberButton value={9} />
             </div>
-            <NumberButton value="0" />
+            <NumberButton value={0} />
+                              <BackspaceButton />
+
         </div>
     );
   }
@@ -186,12 +189,12 @@ var NumberButton = React.createClass({
 })
 
 var BackspaceButton = React.createClass({
-  clickHandler: function() {
+  touchEnd: function() {
     events.emit('backspace');
   },
   render: function() {
     return (
-      <a className="back-button" onClick={this.clickHandler}>⌫</a>
+      <a className="back-button" onTouchEnd={this.touchEnd}>⌫</a>
     );
   }
 });
