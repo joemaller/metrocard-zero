@@ -206,9 +206,9 @@ React.render(
 
 
 
-var fare = 2.5; // current MTA fare price in NYC
-var bonus_min = 5;  // Purcahse price above which bonus value is added
-var bonus = 1.05;  // Actual value of dollars spent above bonus_min
+var fare = 2.75; // current MTA fare price in NYC
+var bonus_min = 5.5;  // Purcahse price above which bonus value is added
+var bonus = 1.11;  // Actual value of dollars spent above bonus_min
 
 
 var max_card_value = 50; // Maximum Metrocard value that will be calculated
