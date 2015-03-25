@@ -208,7 +208,8 @@ React.render(
 
 var fare = 2.75; // current MTA fare price in NYC
 var bonus_min = 5.5;  // Purcahse price above which bonus value is added
-var bonus = 1.11;  // Actual value of dollars spent above bonus_min
+var bonus = 0.11;  // Actual value of dollars spent above bonus_min
+var dollar_value = 1 + bonus;  // Actual value of dollars spent above bonus_min
 
 
 var max_card_value = 50; // Maximum Metrocard value that will be calculated
@@ -224,7 +225,7 @@ var calculateSpending = function(initial_value) {
   console.log(initial_value);
   for (var i = 2; i <= (max_card_value / fare); i++) {
     var target = i * fare;
-    var purchase = (target - initial_value) / bonus;
+    var purchase = (target - initial_value) / dollar_value;
     if (target < initial_value || purchase < bonus_min) {
       console.log('continuing (fail) with target', target, 'and purchase', purchase);
       continue;
@@ -235,8 +236,8 @@ var calculateSpending = function(initial_value) {
         purchase: purchase.toFixed(2),
         raw_purchase: purchase,
         advantage: purchase - math.round(purchase, 2),
-        bonus: (purchase * 0.05).toFixed(2),
-        raw_bonus: purchase * 0.05,
+        bonus: (purchase * bonus).toFixed(2),
+        raw_bonus: purchase * bonus,
         total_sans_bonus: initial_value + purchase,
         total_with_bonus: target,
         rides: target / fare,
