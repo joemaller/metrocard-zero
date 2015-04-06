@@ -24,14 +24,14 @@ var sass = require('gulp-sass');
 var sourcemaps = require('gulp-sourcemaps');
 var livereload = require('gulp-livereload');
 var prettyHrtime = require('pretty-hrtime');
-var chalk = require('chalk');
+var chalk = gutil.colors;
 var connect = require('connect');
 var connectLiveReload = require('connect-livereload');
 var serveStatic = require('serve-static');
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var watchify = require('watchify');
-var reactify = require('reactify');
+var babelify = require('babelify');
 var browserify = require('browserify');
 var rename = require('gulp-rename');
 var svgmin = require('gulp-svgmin');
@@ -139,7 +139,7 @@ gulp.task('watchify', function() {
   return gulp.src(['source/js/*.js'], {base: 'source'})
     .pipe(through.obj(function(file, enc, cb) {
       var bundler = watchify(browserify(file.path, watchify.args)) // don't send a stream or the watches will never close
-        .transform(reactify)
+        .transform(babelify)
         .on('update', function(ids) {
           _.forEach(ids, function(id) {
             gutil.log(
@@ -194,7 +194,7 @@ gulp.task('browserify', function() {
     .pipe(through.obj(function(file, enc, cb) {
       var startTime = process.hrtime();
       browserify(file.path)
-        .transform(reactify)
+        .transform(babelify)
         .bundle(function(err, stream) {
           if (!err) {
             gutil.log(
