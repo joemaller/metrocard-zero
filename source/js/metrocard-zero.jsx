@@ -1,9 +1,11 @@
-// var React = require('react');
+'use strict';
 
-var _ = require('lodash');
+var React = require('react');
+
+// var _ = require('lodash');
 var math = require('mathjs');
 var numeral = require('numeral');
-
+var Tappable = require('react-tappable');
 var EventEmitter = require('events').EventEmitter;
 var events = new EventEmitter();
 
@@ -53,7 +55,7 @@ var MetrocardApp = React.createClass({
   },
 
   render: function() {
-    return(
+    return (
       <div className="app">
         <BalanceDisplay balance={this.state.balance} />
         <KeyPad />
@@ -68,8 +70,8 @@ var MetrocardApp = React.createClass({
 
 var BalanceDisplay = React.createClass({
     render: function() {
-        var money = numeral(this.props.balance).format('$0.00');
-        return (
+      var money = numeral(this.props.balance).format('$0.00');
+      return (
           <div>
               <div className="balance">
                   {money}
@@ -98,23 +100,23 @@ var BuyList = React.createClass({
 
 });
 
-
-
 var BuyCard = React.createClass({
   render: function() {
     var items = [];
     if (this.props.debug === true) {
       // items = _.omit(this.props.data, ['initial_value', 'rides'])
-      items = _.map(this.props.data, function(val, key) {
+      // items = _.map(this.props.data, function(val, key) {
+      items = Object.keys(this.props.data).map(function(key) {
+      // items = this.props.data.map(function(val, key) {
         return (
-          <li><small><strong>{key}:</strong> {val}</small></li>
+          <li><small><strong>{key}:</strong> {this.props.data[key]}</small></li>
         );
-      });
+      }.bind(this));
     }
     return (
       <div className="transaction">
           <strong>
-              Buy: <span  className="white">${this.props.data.purchase}</span>
+              Buy: <span className="white">${this.props.data.purchase}</span>
           </strong> ${this.props.data.total_with_bonus.toFixed(2)} total, {this.props.data.rides} rides
           <ul className="debug">
             {items}
@@ -144,8 +146,7 @@ var KeyPad = React.createClass({
                 <NumberButton value={9} />
             </div>
             <NumberButton value={0} />
-                              <BackspaceButton />
-
+            <BackspaceButton />
         </div>
     );
   }
@@ -166,36 +167,35 @@ var NumberButton = React.createClass({
         console.log('touchStart');
         this.setState({
           'active': true
-        })
+        });
       },
       touchEnd: function(foo) {
         console.log('touchEnd', foo);
-        events.emit('digit', this.props.value)
+        events.emit('digit', this.props.value);
         this.setState({
           'active': false
-        })
+        });
       },
       render: function() {
-          var activeClass = (this.state.active) ? ' active' : '';
-          return (
-              <div
-                  className={"number-button" + activeClass}
-                  onTouchStart={this.touchStart}
-                  onTouchEnd={this.touchEnd}>
+        var activeClass = (this.state.active) ? ' active' : '';
+        return (
+                  <Tappable
+                   onTap={this.touchEnd}
+                   onPoress={this.touchStart}
+                   className={"number-button" + activeClass}
+                   component="div">
                     <span>{this.props.value}</span>
-              </div>
-    );
-  }
-})
+                  </Tappable>
+                  );
+      }
+});
 
 var BackspaceButton = React.createClass({
   touchEnd: function() {
     events.emit('backspace');
   },
   render: function() {
-    return (
-      <a className="back-button" onTouchEnd={this.touchEnd}>⌫</a>
-    );
+    return <Tappable className="back-button" onTap={this.touchEnd}>⌫</Tappable>;
   }
 });
 
@@ -242,14 +242,14 @@ var calculateSpending = function(initial_value) {
         total_with_bonus: target,
         rides: target / fare,
         initial_value: initial_value
-      }
+      };
       transactions.push(transaction);
       // console.log(details);
       console.log('initial value: $%s;  target: $%s;  purchase: $%s', initial_value, target.toFixed(2), purchase.toFixed(2));
-    } else {
+    // } else {
       // console.log('      initial value: $%s;  target: $%s;  purchase: $%s', initial_value, target.toFixed(2), purchase.toFixed(2));
     }
   }
   console.table(transactions);
   return transactions;
-}
+};
