@@ -5,18 +5,22 @@
 /**
  * Node core modules
  */
+var fs = require('fs');
 var http = require('http');
 var path = require('path');
-var spawn = require('child_process').spawn;
+// var spawn = require('child_process').spawn;
 
 
 /**
  * npm packaged modules
  */
 var _ = require('lodash');
+// var debug = require('gulp-debug');
 var gulp = require('gulp');
 var gutil = require('gulp-util');
-// var tap = require('gulp-tap');
+var File = require('vinyl');
+var bl = require('bl');
+var tap = require('gulp-tap');
 var runSequence = require('run-sequence');
 var through = require('through2');
 var del = require('del');
@@ -32,6 +36,7 @@ var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var watchify = require('watchify');
 var babelify = require('babelify');
+var uglify = require('gulp-uglify');
 var browserify = require('browserify');
 var rename = require('gulp-rename');
 var svgmin = require('gulp-svgmin');
@@ -50,6 +55,7 @@ var SASS_FILES = path.join(SRC_DIR, 'sass/**/*.scss');
 var STATIC_ASSETS = [
   path.join(SRC_DIR, '**/*'),       // everything...
   '!' + path.join(SRC_DIR, 'js/*.js'),
+  '!' + path.join(SRC_DIR, 'js/*.jsx'),
   '!' + path.join(SRC_DIR, 'sass/*.scss')
 ];
 
@@ -124,7 +130,8 @@ gulp.task('copy', function() {
  * build just lumps together other tasks: clean, then php, sass and copy
  */
 gulp.task('build', function(cb) {
-  runSequence('clean', 'copy', ['browserify', 'sass'], cb);
+  // runSequence('clean', 'copy', ['browserify', 'sass'], cb);
+  runSequence('clean', 'copy', ['sass'], cb);
 });
 
 
@@ -136,100 +143,139 @@ gulp.task('build', function(cb) {
 var bundlers = {};  // persistent container for watchify instances
 
 gulp.task('watchify', function() {
-  return gulp.src(['source/js/*.js'], {base: 'source'})
+  return gulp.src(['source/js/*.js', 'source/js/*.jsx'], {base: 'source'})
     .pipe(through.obj(function(file, enc, cb) {
-      var bundler = watchify(browserify(file.path, watchify.args)) // don't send a stream or the watches will never close
-        .transform(babelify)
+      gutil.log(chalk.bgRed(file.relative, file.path));
+      var opts = _.assign({}, watchify.args, {entries: file.path, debug: true, file: file});
+      console.log(opts);
+      bundlers[file.relative] = watchify(browserify(opts))
         .on('update', function(ids) {
+          console.log(chalk.bgBlue(ids));
+          // var startTime = process.hrtime();
+          // var newContent = '';
           _.forEach(ids, function(id) {
             gutil.log(
               'Watchify:',
               chalk.magenta(path.relative('source', id)),
               'was modified. Rebundling...');
           });
-          bundle(file.relative);
-        });
+          bundle(bundlers[file.relative], function(data) {
+        file.contents = data;
+        // cb(null, file);
+      })
+            // .pipe(rename({extname: '.js'}))
+            // .pipe(gulp.dest(BUILD_DIR));
 
-      bundlers[file.relative] = bundler;
-      bundle(file.relative);
+          // bundle(file.relative)
+            // .on('data', function(data) {
+            //   newContent += data.contents;
+            // })
+            // .on('end', function() {
+            //   gutil.log(
+            //     'Watchify: Rebundled', chalk.magenta(file.relative),
+            //     'after', chalk.magenta(prettyHrtime(process.hrtime(startTime)))
+            //   );
+            //   file.contents = new Buffer(newContent);
+            //   // cb(null, file);
+            //   // startTime = process.hrtime();
+            //   newContent = '';
+
+            // })
+
+            // .pipe(rename({extname: '.js'}))
+            // .pipe(gulp.dest(BUILD_DIR));
+
+        });
+      bundle(bundlers[file.relative], function(data) {
+        file.contents = data;
+        cb(null, file);
+      });
+
+
+        // .on('error', errorDumper);
+      // console.log(file.relative);
+      // bundlers[file.relative] = bundler;
+      // bundle(file.relative);
+      // var startTime = process.hrtime();
+      // var newContent = '';
+      // bundle(file.relative)
+      //   .on('data', function(data) {
+      //     newContent += data.contents;
+      //   })
+      //   .on('end', function() {
+      //     gutil.log(
+      //       'Watchify: Rebundled', chalk.magenta(file.relative),
+      //       'after', chalk.magenta(prettyHrtime(process.hrtime(startTime)))
+      //     );
+      //     file.contents = new Buffer(newContent);
+      //     cb(null, file);
+      //   })
+      //   .pipe(rename({extname: '.js'}))
+      //   .pipe(sourcemaps.init({loadMaps: true}))
+      //   // .pipe(uglify())
+      //   .pipe(sourcemaps.write('.'))
+      //   .pipe(gulp.dest(BUILD_DIR));
+
+
       cb(null, file);
     }));
 });
 
-
-var bundle = function(key) {
+/**
+ * Bundles a browserify object. Calls callback `cb` with the browserified code
+ * in a single buffer as its argument.
+ * @param  object  bundler    browserify or watchify-wrapped browserify object
+ * @param  {Function} cb      callback function to receive the output buffer
+ */
+var bundle = function(bundler, cb) {
+  var file = bundler._options.file;
   var startTime = process.hrtime();
-  bundlers[key].bundle()
-    // .on('error', gutil.log.bind(gutil, 'Browserify Error'))
-    .on('error', function(err) {
+  bundler
+    .transform(babelify)
+    .external(['jquery', 'react'])
+    .bundle()
+    .on('end', function() {
       gutil.log(
-        'Browserify:', chalk.red('ERROR'),
-        '"' + err.message.replace(/'([^']+)'/g, function() {
-          return chalk.magenta(arguments[1]);
-        }) + '"',
-        'in', chalk.magenta(key)
+        'Browserify: Bundled', chalk.magenta(file.relative),
+        'after', chalk.magenta(prettyHrtime(process.hrtime(startTime)))
       );
     })
-
-    .pipe(source(key))
-    .pipe(buffer())
-    .pipe(sourcemaps.init({loadMaps: true}))
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest(BUILD_DIR));
-
-  gutil.log(
-    'Watchify: Bundled',
-    chalk.magenta(key),
-    'in',
-    chalk.magenta(prettyHrtime(process.hrtime(startTime)))
-  );
+    .pipe(bl(function(err, data) {
+      if (!err) {
+        cb(data);
+      }
+    }));
 };
+
+
+// var errorDumper = function(err) {
+//   gutil.log(
+//       err.plugin, chalk.magenta(err.fileName) + ':' + chalk.cyan(err.lineNumber),
+//       err.message
+//       );
+//   gutil.log(err.plugin, err.stack);
+// };
 
 
 /**
  * browserify task for one-off bundling of js assets
  */
-gulp.task('browserify', function() {
-  return gulp.src(['source/js/*.js'], {base: 'source'})
+gulp.task('browserify', function( ) {
+  return gulp.src(['source/js/*.js', 'source/js/*.jsx'], {base: 'source'})
     .pipe(through.obj(function(file, enc, cb) {
-      var startTime = process.hrtime();
-      browserify(file.path)
-        .transform(babelify)
-        .bundle(function(err, stream) {
-          if (!err) {
-            gutil.log(
-              'Browserify: Bundled', chalk.magenta(file.relative),
-              'in', chalk.magenta(prettyHrtime(process.hrtime(startTime)))
-            );
-          }
-          cb(err, stream);
-        })
-        .on('error', function(err) {
-          gutil.log(
-            'Browserify:', chalk.red('ERROR'),
-            '"' + err.message.replace(/'([^']+)'/g, function() {
-              return chalk.magenta(arguments[1]);
-            }) + '"',
-            'in', chalk.magenta(file.relative)
-          );
-        })
-        .pipe(source(file.relative))
-        .pipe(buffer())
-        .pipe(sourcemaps.init({loadMaps: true}))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest(BUILD_DIR));
-    }));
-  });
-
-
-/**
- * gulp-reload auto-reloads the gulpfile on change, called from 'watch'
- * This is horribly unstable and will leave an orphaned
- * gulp process running after `gulp watch` exits
- */
-gulp.task('gulp-reload', function() {
-  spawn('gulp', ['watch'], {stdio: 'inherit'});
-  process.exit();
+      var b = browserify({entries: file.path, debug: true, file: file});
+      bundle(b, function(data) {
+        file.contents = data;
+        cb(null, file);
+      });
+    }))
+    .pipe(rename({extname: '.js'}))
+    .pipe(gulp.dest(BUILD_DIR))
+    .pipe(rename({extname: '.min.js'}))
+    .pipe(sourcemaps.init({loadMaps: true}))
+    .pipe(uglify())
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest(BUILD_DIR));
 });
 
 
@@ -246,7 +292,7 @@ gulp.task('gulp-reload', function() {
 gulp.task('webserver', ['build'], function() {
   var reporter = function() {
     gutil.log(
-      "Local webserver listening on:",
+      'Local webserver listening on:',
       chalk.magenta(LOCAL_PORT),
       '(http://localhost:' + LOCAL_PORT + ')'
     );
@@ -263,9 +309,6 @@ gulp.task('webserver', ['build'], function() {
  */
 gulp.task('watch', ['webserver', 'svg', 'watchify'], function() {
   livereload.listen();
-
-  // see the note above the gulp-reload task before enabling this
-  // gulp.watch('gulpfile.js', ['gulp-reload']);
 
   // Re-compile SCSS on change
   gulp.watch(SASS_FILES, ['sass']);
