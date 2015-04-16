@@ -1,9 +1,6 @@
 'use strict';
 
 var React = require('react');
-
-// var _ = require('lodash');
-var math = require('mathjs');
 var numeral = require('numeral');
 var Tappable = require('react-tappable');
 var EventEmitter = require('events').EventEmitter;
@@ -28,23 +25,13 @@ var MetrocardApp = React.createClass({
   },
 
   pushDigit: function(digit) {
-    var b = math
-      .chain(this.state.balance)
-      .multiply(1000)
-      .add(digit)
-      .divide(100)
-      .done();
-    this.updateBuys(b);
+    var n = (this.state.balance * 1000 + digit) / 100;
+    this.updateBuys(n);
   },
 
   popDigit: function() {
-    var b = math
-      .chain(this.state.balance)
-      .multiply(10)
-      .floor()
-      .divide(100)
-      .done();
-    this.updateBuys(b);
+    var n = Math.floor(this.state.balance * 10) / 100;
+    this.updateBuys(n);
   },
 
   updateBuys: function(balance) {
@@ -182,7 +169,7 @@ var NumberButton = React.createClass({
                   <Tappable
                    onTap={this.touchEnd}
                    onPoress={this.touchStart}
-                   className={"number-button" + activeClass}
+                   className={'number-button' + activeClass}
                    component="div">
                     <span>{this.props.value}</span>
                   </Tappable>
@@ -211,8 +198,7 @@ var bonus_min = 5.5;  // Purcahse price above which bonus value is added
 var bonus = 0.11;  // Actual value of dollars spent above bonus_min
 var dollar_value = 1 + bonus;  // Actual value of dollars spent above bonus_min
 
-
-var max_card_value = 50; // Maximum Metrocard value that will be calculated
+var max_card_value = fare * 20; // Maximum Metrocard value that will be calculated, n rides
 
 /**
  * [calculateSpending description]
@@ -232,10 +218,11 @@ var calculateSpending = function(initial_value) {
     }
     if (Math.round(purchase * 100) % 5 === 0) {
 
+
       var transaction = {
         purchase: purchase.toFixed(2),
         raw_purchase: purchase,
-        advantage: purchase - math.round(purchase, 2),
+        advantage: purchase - Math.round(purchase, 2),
         bonus: (purchase * bonus).toFixed(2),
         raw_bonus: purchase * bonus,
         total_sans_bonus: initial_value + purchase,
