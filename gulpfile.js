@@ -102,7 +102,7 @@ gulp.task('svg', function() {
       .pipe(rename({extname: '.min.svg'}))
       .pipe(gulp.dest('./design_assets'))
       .on('data', function(file) {
-        gutil.log('SVG: Cleaned', gutil.colors.magenta(file.relative));
+        gutil.log('SVG: Cleaned', chalk.magenta(file.relative));
       });
   }
 );
